@@ -219,7 +219,7 @@ The file is yours — back it up, sync it across machines, or version-control it
 ```bash
 make build          # build ./sshm
 sudo make install   # install to /usr/local/bin
-make release        # cross-compile all platforms → dist/
+make release        # cross-compile and package release archives → dist/
 make test           # run tests
 sudo make uninstall # remove from /usr/local/bin
 ```
