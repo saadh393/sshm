@@ -1,6 +1,18 @@
 # sshm
 
-> A fast, terminal-based SSH connection manager — store your servers once, connect by alias forever.
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/saadh393/sshm?style=flat-square&color=7C3AED&label=latest" alt="Latest Release">
+  <img src="https://img.shields.io/github/actions/workflow/status/saadh393/sshm/release.yml?style=flat-square&color=10B981&label=build" alt="Build Status">
+  <img src="https://img.shields.io/github/go-mod/go-version/saadh393/sshm?style=flat-square&color=00ADD8&label=go" alt="Go Version">
+  <img src="https://img.shields.io/github/license/saadh393/sshm?style=flat-square&color=F59E0B" alt="License">
+  <img src="https://img.shields.io/github/downloads/saadh393/sshm/total?style=flat-square&color=06B6D4&label=downloads" alt="Downloads">
+  <img src="https://img.shields.io/github/issues/saadh393/sshm?style=flat-square&color=EF4444&label=issues" alt="Open Issues">
+  <img src="https://img.shields.io/github/contributors/saadh393/sshm?style=flat-square&color=8B5CF6&label=contributors" alt="Contributors">
+</p>
+
+<p align="center">
+  A fast, terminal-based SSH connection manager — store your servers once, connect by alias forever.
+</p>
 
 ```
 ┌─ sshm ─────────────────────────────────────────────┐
@@ -15,7 +27,10 @@
 └─────────────────────────────────────────────────────┘
 ```
 
-No config files to hand-craft. No flags to memorize. Type `sshm ls`, arrow to your server, press Enter.
+<p align="center">
+  No config files to hand-craft. No flags to memorize.<br>
+  Type <code>sshm ls</code>, arrow to your server, press Enter.
+</p>
 
 ---
 
@@ -66,8 +81,8 @@ sudo make install
 
 ### Add a connection
 
-```
-$ sshm add
+```bash
+sshm add
 ```
 
 Paste your SSH command and answer a few short prompts — sshm parses the user, host, port, and key automatically.
@@ -208,6 +223,36 @@ make release        # cross-compile all platforms → dist/
 make test           # run tests
 sudo make uninstall # remove from /usr/local/bin
 ```
+
+---
+
+## Contributing
+
+Contributions are welcome and appreciated! Here's how to get involved:
+
+**Report a bug or request a feature**
+
+Open an [issue](https://github.com/saadh393/sshm/issues) and describe what you found or what you'd like to see. Please check existing issues first to avoid duplicates.
+
+**Submit a pull request**
+
+1. Fork the repository
+2. Create a branch — `git checkout -b feat/my-feature` or `fix/my-bug`
+3. Make your changes and add tests if relevant
+4. Run `make test` to make sure everything passes
+5. Open a pull request with a clear description of the change
+
+**Ideas for contributions**
+
+- Import connections from `~/.ssh/config`
+- Export connections back to `~/.ssh/config` format
+- Homebrew tap formula
+- Shell completion scripts (bash / zsh / fish)
+- `sshm tunnel` — port forwarding shortcut
+- `sshm copy` — SCP wrapper
+- Encrypted storage option
+
+If you're unsure whether your idea fits, open a discussion first — happy to talk it through.
 
 ---
 
