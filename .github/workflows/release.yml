@@ -50,23 +50,23 @@ jobs:
       - name: Build binaries
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
-          LDFLAGS: -ldflags "-X github.com/saadh393/sshm/cmd.Version=${{ steps.version.outputs.VERSION }} -s -w"
+          ARCHIVE_VERSION: ${{ steps.version.outputs.ARCHIVE_VERSION }}
         run: |
           BINARY=sshm
-          ARCHIVE_VERSION=${{ steps.version.outputs.ARCHIVE_VERSION }}
+          LD="-ldflags=-X github.com/saadh393/sshm/cmd.Version=${VERSION} -s -w"
           mkdir -p dist/pkg/{darwin_amd64,darwin_arm64,linux_amd64,linux_arm64,windows_amd64}
 
-          GOOS=darwin  GOARCH=amd64  go build $LDFLAGS -o dist/pkg/darwin_amd64/$BINARY  .
-          GOOS=darwin  GOARCH=arm64  go build $LDFLAGS -o dist/pkg/darwin_arm64/$BINARY  .
-          GOOS=linux   GOARCH=amd64  go build $LDFLAGS -o dist/pkg/linux_amd64/$BINARY   .
-          GOOS=linux   GOARCH=arm64  go build $LDFLAGS -o dist/pkg/linux_arm64/$BINARY   .
-          GOOS=windows GOARCH=amd64  go build $LDFLAGS -o dist/pkg/windows_amd64/$BINARY.exe .
+          GOOS=darwin  GOARCH=amd64  go build "$LD" -o dist/pkg/darwin_amd64/$BINARY  .
+          GOOS=darwin  GOARCH=arm64  go build "$LD" -o dist/pkg/darwin_arm64/$BINARY  .
+          GOOS=linux   GOARCH=amd64  go build "$LD" -o dist/pkg/linux_amd64/$BINARY   .
+          GOOS=linux   GOARCH=arm64  go build "$LD" -o dist/pkg/linux_arm64/$BINARY   .
+          GOOS=windows GOARCH=amd64  go build "$LD" -o dist/pkg/windows_amd64/$BINARY.exe .
 
-          tar -C dist/pkg/darwin_amd64  -czf dist/${BINARY}_${ARCHIVE_VERSION}_darwin_amd64.tar.gz  $BINARY
-          tar -C dist/pkg/darwin_arm64  -czf dist/${BINARY}_${ARCHIVE_VERSION}_darwin_arm64.tar.gz  $BINARY
-          tar -C dist/pkg/linux_amd64   -czf dist/${BINARY}_${ARCHIVE_VERSION}_linux_amd64.tar.gz   $BINARY
-          tar -C dist/pkg/linux_arm64   -czf dist/${BINARY}_${ARCHIVE_VERSION}_linux_arm64.tar.gz   $BINARY
-          cd dist/pkg/windows_amd64 && zip -q ../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip $BINARY.exe
+          tar -C dist/pkg/darwin_amd64  -czf "dist/${BINARY}_${ARCHIVE_VERSION}_darwin_amd64.tar.gz"  $BINARY
+          tar -C dist/pkg/darwin_arm64  -czf "dist/${BINARY}_${ARCHIVE_VERSION}_darwin_arm64.tar.gz"  $BINARY
+          tar -C dist/pkg/linux_amd64   -czf "dist/${BINARY}_${ARCHIVE_VERSION}_linux_amd64.tar.gz"   $BINARY
+          tar -C dist/pkg/linux_arm64   -czf "dist/${BINARY}_${ARCHIVE_VERSION}_linux_arm64.tar.gz"   $BINARY
+          cd dist/pkg/windows_amd64 && zip -q "../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip" $BINARY.exe
 
           echo "Archives:"
           ls -lh dist/*.tar.gz dist/*.zip
