@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Determine version:
+      #   • If triggered by a tag (v*) → use the tag as-is
+      #   • If triggered by a push to main → auto-generate v0.0.0-YYYYMMDD-<sha>
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+          else
+            DATE="$(date -u +%Y%m%d)"
+            SHA="$(git rev-parse --short HEAD)"
+            VERSION="v0.0.0-${DATE}-${SHA}"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "ARCHIVE_VERSION=${VERSION#v}" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${VERSION}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Build binaries
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          LDFLAGS: -ldflags "-X github.com/saadh393/sshm/cmd.Version=${{ steps.version.outputs.VERSION }} -s -w"
+        run: |
+          BINARY=sshm
+          ARCHIVE_VERSION=${{ steps.version.outputs.ARCHIVE_VERSION }}
+          mkdir -p dist/pkg/{darwin_amd64,darwin_arm64,linux_amd64,linux_arm64,windows_amd64}
+
+          GOOS=darwin  GOARCH=amd64  go build $LDFLAGS -o dist/pkg/darwin_amd64/$BINARY  .
+          GOOS=darwin  GOARCH=arm64  go build $LDFLAGS -o dist/pkg/darwin_arm64/$BINARY  .
+          GOOS=linux   GOARCH=amd64  go build $LDFLAGS -o dist/pkg/linux_amd64/$BINARY   .
+          GOOS=linux   GOARCH=arm64  go build $LDFLAGS -o dist/pkg/linux_arm64/$BINARY   .
+          GOOS=windows GOARCH=amd64  go build $LDFLAGS -o dist/pkg/windows_amd64/$BINARY.exe .
+
+          tar -C dist/pkg/darwin_amd64  -czf dist/${BINARY}_${ARCHIVE_VERSION}_darwin_amd64.tar.gz  $BINARY
+          tar -C dist/pkg/darwin_arm64  -czf dist/${BINARY}_${ARCHIVE_VERSION}_darwin_arm64.tar.gz  $BINARY
+          tar -C dist/pkg/linux_amd64   -czf dist/${BINARY}_${ARCHIVE_VERSION}_linux_amd64.tar.gz   $BINARY
+          tar -C dist/pkg/linux_arm64   -czf dist/${BINARY}_${ARCHIVE_VERSION}_linux_arm64.tar.gz   $BINARY
+          cd dist/pkg/windows_amd64 && zip -q ../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip $BINARY.exe
+
+          echo "Archives:"
+          ls -lh dist/*.tar.gz dist/*.zip
+
+      # For auto-generated versions (main push): delete any existing "latest" release
+      # so the new one becomes /releases/latest. For real tags: create a normal release.
+      - name: Delete previous auto release (main push only)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+          ARCHIVE_VERSION: ${{ steps.version.outputs.ARCHIVE_VERSION }}
+        run: |
+          BINARY=sshm
+          IS_TAG=${{ startsWith(github.ref, 'refs/tags/') }}
+
+          # Build release notes from commit messages since last tag
+          NOTES=$(git log $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD \
+            --pretty=format:"- %s" 2>/dev/null | head -20 || echo "- Automated release from main")
+
+          PRERELEASE_FLAG=""
+          LATEST_FLAG="--latest"
+          if [ "$IS_TAG" != "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+            # auto releases are still marked latest so install.sh can find them
+          fi
+
+          gh release create "${VERSION}" \
+            --title "sshm ${VERSION}" \
+            --notes "${NOTES}" \
+            ${LATEST_FLAG} \
+            ${PRERELEASE_FLAG} \
+            dist/${BINARY}_${ARCHIVE_VERSION}_darwin_amd64.tar.gz \
+            dist/${BINARY}_${ARCHIVE_VERSION}_darwin_arm64.tar.gz \
+            dist/${BINARY}_${ARCHIVE_VERSION}_linux_amd64.tar.gz \
+            dist/${BINARY}_${ARCHIVE_VERSION}_linux_arm64.tar.gz \
+            dist/${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip
