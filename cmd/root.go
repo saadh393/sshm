@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/saadh393/sshm/internal/config"
+	"github.com/saadh393/sshm/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -10,17 +13,34 @@ import (
 var Version = "dev"
 
 var rootCmd = &cobra.Command{
-	Use:   "sshm",
-	Short: "sshm – a lightweight SSH connection manager",
+	Use:           "sshm",
+	Short:         "sshm – a lightweight SSH connection manager",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Long: `sshm manages SSH connections stored in ~/.config/sshm/connections.json.
 
-Use 'sshm add', 'sshm list', 'sshm connect' and friends to manage your
-connections.`,
+Run 'sshm -h' to see available commands.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conns, err := config.Load()
+		if err != nil {
+			return err
+		}
+		if len(conns) == 0 {
+			fmt.Fprintln(os.Stdout, "No connections saved. Run 'sshm add' to add one.")
+			return nil
+		}
+		result := tui.Run(conns)
+		if result.Quit || result.Conn == nil {
+			return nil
+		}
+		return doConnect(*result.Conn, false)
+	},
 }
 
 // Execute is the entry-point called from main.go.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

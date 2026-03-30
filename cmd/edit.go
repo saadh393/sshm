@@ -7,14 +7,20 @@ import (
 	"github.com/fatih/color"
 	"github.com/saadh393/sshm/internal/config"
 	sshpkg "github.com/saadh393/sshm/internal/ssh"
+	"github.com/saadh393/sshm/internal/tui"
 	"github.com/spf13/cobra"
 )
 
 var editCmd = &cobra.Command{
-	Use:   "edit <alias>",
-	Short: "Edit an existing connection (only supplied flags are updated)",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runEdit,
+	Use:   "edit [alias]",
+	Short: "Edit an existing connection",
+	Long: `Edit a saved connection interactively or via flags.
+
+Without an alias, opens a TUI picker to choose which connection to edit.
+Without any flags, opens an interactive edit form pre-filled with current values.
+With flags, applies only the supplied values and saves immediately.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runEdit,
 }
 
 var (
@@ -37,11 +43,26 @@ func init() {
 }
 
 func runEdit(cmd *cobra.Command, args []string) error {
-	alias := args[0]
-
 	conns, err := config.Load()
 	if err != nil {
 		return err
+	}
+
+	if len(conns) == 0 {
+		fmt.Fprintln(os.Stdout, "No connections saved. Run 'sshm add' to add one.")
+		return nil
+	}
+
+	// Resolve alias: from argument or TUI picker.
+	var alias string
+	if len(args) == 1 {
+		alias = args[0]
+	} else {
+		result := tui.RunPicker(conns, "Edit — select a connection  [enter] select  [/] filter  [q] quit")
+		if result.Quit || result.Conn == nil {
+			return nil
+		}
+		alias = result.Conn.Alias
 	}
 
 	conn, ok := config.FindExact(conns, alias)
@@ -49,8 +70,56 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("connection %q not found", alias)
 	}
 
-	// Apply only the flags the user explicitly passed.
 	flags := cmd.Flags()
+	anyFlagSet := flags.Changed("host") || flags.Changed("user") || flags.Changed("port") ||
+		flags.Changed("key") || flags.Changed("group") || flags.Changed("rename")
+
+	if anyFlagSet {
+		// Flag-based edit (non-interactive).
+		conn, conns, err = applyEditFlags(cmd, conn, conns, alias)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Interactive edit form.
+		result := tui.RunEditForm(conn)
+		if !result.Saved || result.Conn == nil {
+			fmt.Fprintln(os.Stdout, "Edit cancelled.")
+			return nil
+		}
+		updated := *result.Conn
+
+		// Handle rename: remove old alias, add new.
+		if updated.Alias != conn.Alias {
+			if _, exists := config.FindExact(conns, updated.Alias); exists {
+				return fmt.Errorf("alias %q already exists", updated.Alias)
+			}
+			conns, err = config.Remove(conns, conn.Alias)
+			if err != nil {
+				return err
+			}
+			conns = append(conns, updated)
+		} else {
+			conns, err = config.Update(conns, updated)
+			if err != nil {
+				return err
+			}
+		}
+		conn = updated
+	}
+
+	if err := config.Save(conns); err != nil {
+		return err
+	}
+
+	green := color.New(color.FgGreen, color.Bold)
+	fmt.Fprintf(os.Stdout, "%s Updated connection %q\n", green.Sprint("✓"), conn.Alias)
+	return nil
+}
+
+func applyEditFlags(cmd *cobra.Command, conn config.Connection, conns []config.Connection, origAlias string) (config.Connection, []config.Connection, error) {
+	flags := cmd.Flags()
+	var err error
 
 	if flags.Changed("host") {
 		conn.Host = editHost
@@ -62,8 +131,8 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		conn.Port = editPort
 	}
 	if flags.Changed("key") {
-		if err := sshpkg.ValidateKeyPath(editKeyPath); err != nil {
-			return err
+		if err = sshpkg.ValidateKeyPath(editKeyPath); err != nil {
+			return conn, conns, err
 		}
 		conn.KeyPath = editKeyPath
 	}
@@ -72,29 +141,21 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	if flags.Changed("rename") {
-		// Make sure the new alias is not already taken.
 		if _, exists := config.FindExact(conns, editRename); exists {
-			return fmt.Errorf("alias %q already exists", editRename)
+			return conn, conns, fmt.Errorf("alias %q already exists", editRename)
 		}
-		// Remove old entry, set new alias, add fresh.
-		conns, err = config.Remove(conns, alias)
+		conns, err = config.Remove(conns, origAlias)
 		if err != nil {
-			return err
+			return conn, conns, err
 		}
 		conn.Alias = editRename
 		conns = append(conns, conn)
 	} else {
 		conns, err = config.Update(conns, conn)
 		if err != nil {
-			return err
+			return conn, conns, err
 		}
 	}
 
-	if err := config.Save(conns); err != nil {
-		return err
-	}
-
-	green := color.New(color.FgGreen, color.Bold)
-	fmt.Fprintf(os.Stdout, "%s Updated connection %q\n", green.Sprint("✓"), conn.Alias)
-	return nil
+	return conn, conns, nil
 }

@@ -8,15 +8,19 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/saadh393/sshm/internal/config"
+	"github.com/saadh393/sshm/internal/tui"
 	"github.com/spf13/cobra"
 )
 
 var removeCmd = &cobra.Command{
-	Use:     "remove <alias>",
+	Use:     "remove [alias]",
 	Aliases: []string{"rm"},
 	Short:   "Remove a saved connection",
-	Args:    cobra.ExactArgs(1),
-	RunE:    runRemove,
+	Long: `Remove a saved connection by alias.
+
+Without an alias, opens a TUI picker to choose which connection to remove.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runRemove,
 }
 
 var removeYes bool
@@ -27,11 +31,26 @@ func init() {
 }
 
 func runRemove(cmd *cobra.Command, args []string) error {
-	alias := args[0]
-
 	conns, err := config.Load()
 	if err != nil {
 		return err
+	}
+
+	if len(conns) == 0 {
+		fmt.Fprintln(os.Stdout, "No connections saved.")
+		return nil
+	}
+
+	// Resolve alias: from argument or TUI picker.
+	var alias string
+	if len(args) == 1 {
+		alias = args[0]
+	} else {
+		result := tui.RunPicker(conns, "Remove — select a connection  [enter] select  [/] filter  [q] quit")
+		if result.Quit || result.Conn == nil {
+			return nil
+		}
+		alias = result.Conn.Alias
 	}
 
 	conn, ok := config.FindExact(conns, alias)

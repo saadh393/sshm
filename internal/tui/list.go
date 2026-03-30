@@ -97,7 +97,7 @@ type Model struct {
 }
 
 // NewModel constructs a Model from a slice of connections.
-func NewModel(conns []config.Connection, width, height int) Model {
+func NewModel(conns []config.Connection, width, height int, title string) Model {
 	items := make([]list.Item, len(conns))
 	for i, c := range conns {
 		items[i] = connItem{conn: c}
@@ -106,7 +106,7 @@ func NewModel(conns []config.Connection, width, height int) Model {
 	delegate := itemDelegate{}
 
 	l := list.New(items, delegate, width, height)
-	l.Title = "SSH Connections"
+	l.Title = title
 	l.Styles.Title = TitleStyle
 	l.SetShowHelp(true)
 	l.SetFilteringEnabled(true)
@@ -168,7 +168,7 @@ func Run(conns []config.Connection) Result {
 		return Result{Quit: true}
 	}
 
-	m := NewModel(conns, 80, 24)
+	m := NewModel(conns, 80, 24, "SSH Connections  [enter] connect  [/] filter  [q] quit")
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
