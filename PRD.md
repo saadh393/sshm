@@ -1,4 +1,4 @@
-# sshm — Project Plan
+# sshm — Product Requirements Document
 
 ## What is sshm?
 
@@ -13,168 +13,134 @@ A terminal-based SSH connection manager written in Go. Store your servers once, 
 | **Go**                                            | Single static binary, no runtime deps, fast startup, easy cross-compilation        |
 | **Cobra** (`spf13/cobra`)                         | Industry-standard CLI framework — subcommands, flags, help text, shell completions |
 | **fatih/color**                                   | Colored terminal output (success/error feedback)                                   |
-| **Bubble Tea** (`charmbracelet/bubbletea`)        | Interactive TUI framework — keyboard navigation, filtering, selection              |
-| **Bubbles** (`charmbracelet/bubbles/list`)        | Pre-built list component with fuzzy search, arrow-key nav, and item selection      |
-| **Lip Gloss** (`charmbracelet/lipgloss`)          | Terminal styling/layout (used by Bubbles internally, also useful for custom views) |
+| **Bubble Tea** (`charmbracelet/bubbletea`)        | Interactive TUI framework — keyboard navigation, filtering, selection, forms       |
+| **Bubbles** (`charmbracelet/bubbles`)             | Pre-built list + textinput components used by the TUI layer                        |
+| **Lip Gloss** (`charmbracelet/lipgloss`)          | Terminal styling/layout — borders, colours, column widths                          |
 | **JSON file** (`~/.config/sshm/connections.json`) | Simple, human-readable, easy to back up or version-control                         |
 
 ---
 
-## Commands (v1 Scope)
+## Current State (v1 — implemented)
 
-### `sshm add <alias>`
+### Commands
 
-Save a new connection.
+| Command | Alias | Status | Notes |
+|---|---|---|---|
+| `sshm` (no args) | | ✅ Done | Opens TUI list directly |
+| `sshm -h` | | ✅ Done | Shows help (Cobra built-in) |
+| `sshm add` | | ✅ Done | Interactive prompt-based wizard |
+| `sshm list` | `ls` | ✅ Done | Full-screen fuzzy-filterable TUI |
+| `sshm connect <alias>` | `c` | ✅ Done | Exact + partial match; `--dry` flag |
+| `sshm show <alias>` | | ✅ Done | Plain-text detail view |
+| `sshm edit [alias]` | | ✅ Done | TUI picker if no alias; interactive form if no flags |
+| `sshm remove [alias]` | `rm` | ✅ Done | TUI picker if no alias; confirmation prompt |
+| `sshm version` | | ✅ Done | Prints version string |
+| `sshm completion <shell>` | | ✅ Done | Cobra-generated shell completions |
 
-```
-sshm add prod-api --host 10.0.1.5 --user deploy --key ~/.ssh/prod_rsa --port 22 --group production
-```
+### UX Highlights
 
-- `--host` / `-H` (required) — server IP or hostname
-- `--user` / `-u` (required) — SSH username
-- `--port` / `-p` — SSH port, defaults to 22
-- `--key` / `-k` — path to private key (validated on add)
-- `--group` / `-g` — optional label for grouping
+- **`sshm` alone** opens the connection list — zero arguments needed for the primary workflow
+- **`sshm edit`** without an alias opens a TUI picker, then a full interactive edit form (tab between fields, ctrl+s to save)
+- **`sshm remove`** without an alias opens a TUI picker, then a confirmation prompt
+- All TUI screens share the same keyboard model: `/` to filter, `↑↓` to navigate, `Enter` to select, `q`/`Esc` to quit
 
-### `sshm connect <alias>` (shorthand: `c`)
-
-Open an SSH session. Uses `syscall.Exec` to replace the process with a real SSH session (not a subprocess).
-
-```
-sshm connect prod-api
-sshm c prod              # partial match — auto-connects if unique
-sshm connect prod --dry  # prints the ssh command without executing
-```
-
-- If no exact match, does a substring search
-- Single match → auto-connect with a warning
-- Multiple matches → lists them and asks you to be specific
-
-### `sshm list` (shorthand: `ls`)
-
-Interactive TUI — browse, filter, and connect from one screen.
-
-```
-sshm list
-sshm list --group production
-```
-
-Opens a full-screen interactive list powered by Bubble Tea:
-
-```
-┌─ sshm ─────────────────────────────────────────┐
-│                                                 │
-│  Filter: prod_                                  │
-│                                                 │
-│  > prod-api        deploy@10.0.1.5   production │
-│    prod-db         admin@10.0.2.10   production │
-│    prod-worker     deploy@10.0.3.1   production │
-│                                                 │
-│  ↑/↓ navigate  / filter  enter connect  q quit  │
-└─────────────────────────────────────────────────┘
-```
-
-**Keyboard controls:**
-
-- `↑` / `↓` or `j` / `k` — navigate items
-- `/` — start typing to filter (fuzzy match on alias, host, user, group)
-- `Enter` — connect to the highlighted server immediately
-- `q` / `Esc` — quit without connecting
-
-**Why this matters:** This is the primary workflow. You type `sshm ls`, scan the list visually, arrow to your server, hit Enter. One command, zero memorization.
-
-### `sshm show <alias>`
-
-Full detail view for one connection, including the raw SSH command it would run.
-
-### `sshm edit <alias>`
-
-Partial update — only the flags you pass get changed, everything else stays.
-
-```
-sshm edit prod-api --host 10.0.1.99
-sshm edit prod-api --rename api-server
-```
-
-### `sshm remove <alias>` (shorthand: `rm`)
-
-Delete with confirmation prompt. Pass `-y` to skip.
-
-```
-sshm remove old-server
-sshm rm old-server -y
-```
-
-### `sshm version`
-
-Prints the version string.
-
----
-
-## Project Structure
+### Architecture
 
 ```
 sshm/
-├── main.go                     # Entry point — just calls cmd.Execute()
-├── go.mod
-├── Makefile
-├── README.md
-├── .gitignore
+├── main.go
 ├── cmd/
-│   ├── root.go                 # Cobra root command + subcommand registration
-│   ├── add.go                  # sshm add
-│   ├── connect.go              # sshm connect
-│   ├── list.go                 # sshm list (launches TUI)
-│   ├── show.go                 # sshm show
-│   ├── edit.go                 # sshm edit
-│   └── remove.go               # sshm remove
+│   ├── root.go       # Root command — no-arg RunE shows TUI list
+│   ├── add.go        # Interactive wizard (prompt-based)
+│   ├── connect.go    # Direct connect by alias; doConnect() shared helper
+│   ├── edit.go       # Optional alias; TUI picker → edit form or flag-based
+│   ├── list.go       # Launches TUI, selects → doConnect
+│   ├── remove.go     # Optional alias; TUI picker → confirmation
+│   └── show.go       # Plain-text detail view
 └── internal/
     ├── config/
-    │   └── config.go           # Load/Save/Add/Remove/Edit/Search on JSON store
+    │   └── config.go       # Connection struct, JSON load/save, CRUD helpers
     ├── ssh/
-    │   └── ssh.go              # Build ssh args + syscall.Exec to connect
+    │   ├── ssh.go          # BuildArgs, CommandString, Connect (syscall.Exec)
+    │   └── parse.go        # ParseCommand — parses raw ssh … strings
     └── tui/
-        ├── list.go             # Bubble Tea model for the interactive server list
-        └── styles.go           # Lip Gloss styles (colors, borders, layout)
+        ├── list.go         # Bubble Tea list model; Run() and NewModel(title)
+        ├── picker.go       # RunPicker(conns, title) — selection only, no connect
+        ├── editform.go     # RunEditForm(conn) — textinput form, returns EditResult
+        └── styles.go       # Shared Lip Gloss styles
 ```
 
----
-
-## Data Model
-
-Each connection is a flat struct stored as JSON:
+### Data Model
 
 ```json
 [
-    {
-        "alias": "prod-api",
-        "host": "10.0.1.5",
-        "user": "deploy",
-        "port": 22,
-        "key_path": "~/.ssh/prod_rsa",
-        "group": "production"
-    }
+  {
+    "alias": "prod-api",
+    "host": "10.0.1.5",
+    "user": "deploy",
+    "port": 22,
+    "key_path": "~/.ssh/prod_rsa",
+    "group": "production"
+  }
 ]
 ```
 
-Stored at: `~/.config/sshm/connections.json`  
+Stored at: `~/.config/sshm/connections.json`
 Permissions: `0600` (file), `0700` (directory)
 
 ---
 
 ## Key Design Decisions
 
-1. **syscall.Exec over os/exec** — The connect command replaces the sshm process with ssh entirely. This means the terminal session behaves exactly like a normal SSH session (signals, TTY, etc. all work correctly). No wrapper overhead.
+1. **syscall.Exec over os/exec** — The connect command replaces the sshm process with ssh entirely. Terminal session behaves exactly like a native SSH session (signals, TTY, exit codes all work correctly).
 
-2. **JSON over TOML/YAML** — Go has JSON in the standard library. No extra dependency, no parser quirks. The file is small enough that readability differences are negligible.
+2. **JSON over TOML/YAML** — Go has JSON in the standard library. No extra dependency, no parser quirks.
 
 3. **Alias as primary key** — Case-insensitive uniqueness on alias. No numeric IDs to remember.
 
-4. **Partial matching on connect** — Typing `sshm c prod` should just work if there's only one match. Reduces friction for the most common operation.
+4. **Partial matching on connect** — `sshm c prod` auto-connects if there's only one match. Reduces friction for the most common operation.
 
-5. **Cobra for CLI** — Gets you `--help`, flag parsing, subcommand routing, and shell completion generation for free.
+5. **TUI picker as shared primitive** — `tui.RunPicker(conns, title)` is reused by `list`, `edit`, and `remove`. Title is configurable so context is always clear to the user.
 
-6. **Bubble Tea for interactive list** — The `charmbracelet` stack is the de facto standard for Go TUIs (used by GitHub CLI, Charm tools, etc.). The `bubbles/list` component gives you keyboard nav, fuzzy filtering, and custom item rendering out of the box. When the user presses Enter, the TUI exits cleanly and returns the selected alias, which is then passed to `ssh.Connect()` via `syscall.Exec`.
+6. **Root command opens TUI** — `sshm` alone is the entry point for the primary workflow. Help is behind `-h` which is the convention for power users who know the commands.
+
+7. **Interactive edit form** — `tui.RunEditForm(conn)` pre-fills all fields. Flag-based edits still work for scripting. Both paths converge on the same save logic.
+
+---
+
+## Roadmap (open for contribution)
+
+Features are grouped by scope. Community contributors should open an issue to claim a feature before starting work.
+
+### Easy — good first issues
+
+| Feature | Description | Key files to touch |
+|---|---|---|
+| `sshm ping <alias>` | SSH reachability check with latency | `cmd/ping.go`, `internal/ssh/ssh.go` |
+| `sshm duplicate <alias> <new>` | Clone a connection under a new name | `cmd/duplicate.go`, `internal/config/config.go` |
+| Last-connected timestamp | Record `last_connected` in JSON on connect; show in `sshm show` | `internal/config/config.go`, `cmd/show.go`, `internal/ssh/ssh.go` |
+| `sshm search <query>` | Non-interactive table output for scripting | `cmd/search.go` |
+
+### Medium — weekend projects
+
+| Feature | Description | Key files to touch |
+|---|---|---|
+| `sshm exec <alias> <command>` | Run a one-off remote command without interactive session | `cmd/exec.go`, `internal/ssh/ssh.go` |
+| `sshm tunnel <alias> --local 8080 --remote 3000` | Port-forwarding shortcut via `ssh -L` | `cmd/tunnel.go`, `internal/ssh/ssh.go` |
+| `sshm copy <alias> <local> <remote>` | SCP wrapper using stored connection data | `cmd/copy.go`, `internal/ssh/scp.go` |
+| `sshm import` | Bulk-import hosts from `~/.ssh/config` | `cmd/import.go`, `internal/ssh/parse.go` |
+| Tags (replace single group) | `group string` → `tags []string` in data model; TUI filter already supports multi-field | `internal/config/config.go`, `internal/tui/list.go` |
+| Health indicator in TUI list | Colored dot per host — parallel reachability checks before render | `internal/tui/list.go`, new `internal/ssh/ping.go` |
+
+### Harder — larger scope
+
+| Feature | Description | Key files to touch |
+|---|---|---|
+| `sshm export` to `~/.ssh/config` | Generate valid SSH config block from sshm data | `cmd/export.go` |
+| `sshm batch <cmd> --group <g>` | Run a command across all connections in a group | `cmd/batch.go`, `internal/ssh/ssh.go` |
+| Encryption at rest | AES-GCM encrypt `connections.json`; prompt on load/save | `internal/config/config.go`, new `internal/crypto/` |
+| Homebrew tap | Package and publish formula at `saadh393/homebrew-tap` | Separate tap repository |
+| `sshm backup` / `sshm restore` | Export/import `connections.json` for machine sync | `cmd/backup.go`, `cmd/restore.go` |
 
 ---
 
@@ -186,36 +152,8 @@ go mod tidy
 make build        # → ./sshm binary
 
 # Install to PATH
-sudo mv sshm /usr/local/bin/
+sudo make install
 
 # Cross-compile all platforms
 make release      # → dist/sshm-linux-amd64, sshm-darwin-arm64, etc.
 ```
-
----
-
-## Implementation Order
-
-| Phase     | What                                                                                    | Estimated Time |
-| --------- | --------------------------------------------------------------------------------------- | -------------- |
-| 1         | Scaffold: `go mod init`, Cobra root, Makefile                                           | 15 min         |
-| 2         | `internal/config` — Load, Save, Add, Get, Remove                                        | 30 min         |
-| 3         | `cmd/add` + basic `cmd/list` (non-interactive, for testing)                             | 20 min         |
-| 4         | `internal/tui` — Bubble Tea list model, Lip Gloss styles, fuzzy filter, Enter-to-select | 45 min         |
-| 5         | Wire `cmd/list` → TUI → `ssh.Connect()` (select a server, hit Enter, you're in)         | 20 min         |
-| 6         | `internal/ssh` + `cmd/connect` — direct connect by alias                                | 20 min         |
-| 7         | `cmd/show`, `cmd/edit`, `cmd/remove` — remaining CRUD                                   | 30 min         |
-| 8         | Polish: error messages, edge cases, README                                              | 20 min         |
-| **Total** |                                                                                         | **~3 hours**   |
-
----
-
-## Future Ideas (post-v1)
-
-- **Import from `~/.ssh/config`** — parse existing hosts automatically
-- **SSH config export** — generate an `~/.ssh/config` block from sshm data
-- **Tags instead of single group** — more flexible filtering
-- **`sshm copy <alias> <local> <remote>`** — SCP wrapper
-- **`sshm tunnel <alias> --local 8080 --remote 3000`** — port forwarding shortcut
-- **Encryption at rest** — optional passphrase on the JSON file
-- **Shell completions** — Cobra can auto-generate bash/zsh/fish completions
