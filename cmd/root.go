@@ -33,6 +33,9 @@ Run 'sshm -h' to see available commands.`,
 		if result.Quit || result.Conn == nil {
 			return nil
 		}
+		if result.OpenCommands {
+			return runCommandBrowserFlow(*result.Conn)
+		}
 		return doConnect(*result.Conn, false)
 	},
 }

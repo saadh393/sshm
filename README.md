@@ -110,9 +110,21 @@ sshm ls         # alias
 | Key | Action |
 |---|---|
 | `↑` `↓` or `j` `k` | Navigate |
+| `c` | Open saved commands for selected connection |
 | `/` | Filter (fuzzy match on alias, host, user, group) |
 | `Enter` | Connect |
 | `q` `Esc` | Quit |
+
+From command browser:
+
+| Key | Action |
+|---|---|
+| `↑` `↓` | Navigate commands |
+| `Enter` | Run selected command on selected connection |
+| `a` | Add a new command from TUI form |
+| `q` `Esc` | Back |
+
+<img width="1276" height="721" alt="sshm command browser" src="https://github.com/user-attachments/assets/23c5e8d3-e15a-4284-b61e-64cb0af7511f" />
 
 ### Add a connection
 

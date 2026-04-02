@@ -36,6 +36,9 @@ func runList(_ *cobra.Command, _ []string) error {
 	if result.Quit || result.Conn == nil {
 		return nil
 	}
+	if result.OpenCommands {
+		return runCommandBrowserFlow(*result.Conn)
+	}
 
 	return doConnect(*result.Conn, false)
 }
