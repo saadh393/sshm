@@ -175,12 +175,21 @@ func runCommandList(_ *cobra.Command, args []string) error {
 		names = append(names, n)
 	}
 	sort.Strings(names)
+	maxNameLen := 0
+	for _, n := range names {
+		if len(n) > maxNameLen {
+			maxNameLen = len(n)
+		}
+	}
+	if maxNameLen < 8 {
+		maxNameLen = 8
+	}
 
 	bold := color.New(color.Bold)
 	cyan := color.New(color.FgCyan)
 	fmt.Fprintf(os.Stdout, "%s\n", bold.Sprintf("Saved commands for %s:", conn.Alias))
 	for _, n := range names {
-		fmt.Fprintf(os.Stdout, "  %-20s %s\n", bold.Sprint(n), cyan.Sprint(conn.Commands[n]))
+		fmt.Fprintf(os.Stdout, "  %-*s %s\n", maxNameLen, bold.Sprint(n), cyan.Sprint(conn.Commands[n]))
 	}
 	return nil
 }
