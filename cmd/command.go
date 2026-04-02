@@ -228,7 +228,7 @@ func loadConnectionForMutation(alias string) ([]config.Connection, int, config.C
 	}
 
 	for i, c := range conns {
-		if strings.EqualFold(c.Alias, conn.Alias) {
+		if c.Alias == conn.Alias {
 			return conns, i, conn, nil
 		}
 	}
