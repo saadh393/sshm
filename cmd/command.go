@@ -222,16 +222,10 @@ func loadConnectionForMutation(alias string) ([]config.Connection, int, config.C
 		return nil, -1, config.Connection{}, err
 	}
 
-	conn, ok := config.FindExact(conns, alias)
+	conn, idx, ok := config.FindExactWithIndex(conns, alias)
 	if !ok {
 		return nil, -1, config.Connection{}, fmt.Errorf("connection %q not found", alias)
 	}
 
-	for i, c := range conns {
-		if c.Alias == conn.Alias {
-			return conns, i, conn, nil
-		}
-	}
-
-	return nil, -1, config.Connection{}, fmt.Errorf("internal error: lookup index not found for connection %q", conn.Alias)
+	return conns, idx, conn, nil
 }
