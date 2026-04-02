@@ -71,7 +71,7 @@ func init() {
 func runCommandAdd(_ *cobra.Command, args []string) error {
 	alias, name, remoteCommand := args[0], args[1], args[2]
 
-	conns, idx, conn, err := loadConnectionForMutation(alias)
+	conns, idx, conn, err := loadConnectionAndIndex(alias)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func runCommandAdd(_ *cobra.Command, args []string) error {
 func runCommandUpdate(_ *cobra.Command, args []string) error {
 	alias, name, remoteCommand := args[0], args[1], args[2]
 
-	conns, idx, conn, err := loadConnectionForMutation(alias)
+	conns, idx, conn, err := loadConnectionAndIndex(alias)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func runCommandUpdate(_ *cobra.Command, args []string) error {
 func runCommandDelete(_ *cobra.Command, args []string) error {
 	alias, name := args[0], args[1]
 
-	conns, idx, conn, err := loadConnectionForMutation(alias)
+	conns, idx, conn, err := loadConnectionAndIndex(alias)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func runCommandRun(_ *cobra.Command, args []string) error {
 	return sshpkg.ConnectRemoteCommand(conn, remoteCommand)
 }
 
-func loadConnectionForMutation(alias string) ([]config.Connection, int, config.Connection, error) {
+func loadConnectionAndIndex(alias string) ([]config.Connection, int, config.Connection, error) {
 	conns, err := config.Load()
 	if err != nil {
 		return nil, -1, config.Connection{}, err
