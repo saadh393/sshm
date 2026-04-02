@@ -233,6 +233,5 @@ func loadConnectionForMutation(alias string) ([]config.Connection, int, config.C
 		}
 	}
 
-	// Defensive fallback for unexpected data races/corruption between lookup and indexing.
-	return nil, -1, config.Connection{}, fmt.Errorf("connection %q lookup became inconsistent", conn.Alias)
+	return nil, -1, config.Connection{}, fmt.Errorf("internal error: lookup index not found for connection %q", conn.Alias)
 }
