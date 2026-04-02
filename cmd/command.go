@@ -105,7 +105,7 @@ func runCommandUpdate(_ *cobra.Command, args []string) error {
 		return err
 	}
 	if conn.Commands == nil {
-		return fmt.Errorf("command %q not found for connection %q", name, conn.Alias)
+		return fmt.Errorf("no saved commands for connection %q", conn.Alias)
 	}
 	if _, exists := conn.Commands[name]; !exists {
 		return fmt.Errorf("command %q not found for connection %q", name, conn.Alias)
@@ -133,7 +133,7 @@ func runCommandDelete(_ *cobra.Command, args []string) error {
 		return err
 	}
 	if conn.Commands == nil {
-		return fmt.Errorf("command %q not found for connection %q", name, conn.Alias)
+		return fmt.Errorf("no saved commands for connection %q", conn.Alias)
 	}
 	if _, exists := conn.Commands[name]; !exists {
 		return fmt.Errorf("command %q not found for connection %q", name, conn.Alias)
@@ -222,11 +222,16 @@ func loadConnectionForMutation(alias string) ([]config.Connection, int, config.C
 		return nil, -1, config.Connection{}, err
 	}
 
+	conn, ok := config.FindExact(conns, alias)
+	if !ok {
+		return nil, -1, config.Connection{}, fmt.Errorf("connection %q not found", alias)
+	}
+
 	for i, c := range conns {
-		if strings.EqualFold(c.Alias, alias) {
-			return conns, i, c, nil
+		if strings.EqualFold(c.Alias, conn.Alias) {
+			return conns, i, conn, nil
 		}
 	}
 
-	return nil, -1, config.Connection{}, fmt.Errorf("connection %q not found", alias)
+	return nil, -1, config.Connection{}, fmt.Errorf("connection %q not found", conn.Alias)
 }

@@ -65,16 +65,15 @@ func Connect(c config.Connection) error {
 
 // ConnectRemoteCommand replaces the current process with ssh executing a remote command.
 func ConnectRemoteCommand(c config.Connection, remoteCommand string) error {
-	if strings.TrimSpace(remoteCommand) == "" {
-		return fmt.Errorf("remote command cannot be empty")
-	}
-
 	sshPath, err := exec.LookPath("ssh")
 	if err != nil {
 		return fmt.Errorf("ssh not found in PATH: %w", err)
 	}
 
 	args := BuildRemoteCommandArgs(c, remoteCommand)
+	if len(args) == len(BuildArgs(c)) {
+		return fmt.Errorf("remote command cannot be empty")
+	}
 	args[0] = sshPath
 
 	return syscall.Exec(sshPath, args, os.Environ())
