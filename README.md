@@ -216,6 +216,18 @@ Connection Details
 SSH Command:   ssh -i ~/.ssh/id_ed25519 ubuntu@18.136.130.144
 ```
 
+### Save and run per-connection remote commands
+
+```bash
+sshm command add prod-api restart-nginx "sudo systemctl restart nginx"
+sshm command add prod-api tail-nginx "tail -f /var/log/nginx/access.log"
+sshm command list prod-api
+sshm command run prod-api restart-nginx
+sshm command run prod-api tail-nginx --dry
+sshm command update prod-api tail-nginx "tail -n 200 /var/log/nginx/access.log"
+sshm command delete prod-api restart-nginx
+```
+
 ### All commands
 
 | Command | Alias | Description |
@@ -225,6 +237,7 @@ SSH Command:   ssh -i ~/.ssh/id_ed25519 ubuntu@18.136.130.144
 | `sshm list` | `ls` | Same as `sshm` — browse and connect via TUI |
 | `sshm connect <alias>` | `c` | Connect directly by alias (partial match supported) |
 | `sshm show <alias>` | | Show full connection details |
+| `sshm command` | `cmd` | Manage saved remote commands per connection |
 | `sshm edit [alias]` | | Edit a connection — TUI picker if no alias given |
 | `sshm remove [alias]` | `rm` | Remove a connection — TUI picker if no alias given |
 | `sshm version` | | Print version |
@@ -247,7 +260,11 @@ SSH Command:   ssh -i ~/.ssh/id_ed25519 ubuntu@18.136.130.144
     "user": "ubuntu",
     "port": 22,
     "key_path": "~/.ssh/id_ed25519",
-    "group": "production"
+    "group": "production",
+    "commands": {
+      "restart-nginx": "sudo systemctl restart nginx",
+      "tail-nginx": "tail -f /var/log/nginx/access.log"
+    }
   }
 ]
 ```

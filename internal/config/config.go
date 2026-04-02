@@ -17,12 +17,13 @@ const (
 
 // Connection represents a single SSH connection entry.
 type Connection struct {
-	Alias   string `json:"alias"`
-	Host    string `json:"host"`
-	User    string `json:"user"`
-	Port    int    `json:"port"`
-	KeyPath string `json:"key_path,omitempty"`
-	Group   string `json:"group,omitempty"`
+	Alias    string            `json:"alias"`
+	Host     string            `json:"host"`
+	User     string            `json:"user"`
+	Port     int               `json:"port"`
+	KeyPath  string            `json:"key_path,omitempty"`
+	Group    string            `json:"group,omitempty"`
+	Commands map[string]string `json:"commands,omitempty"`
 }
 
 // configPath returns the full path to connections.json.

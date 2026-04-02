@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/fatih/color"
 	"github.com/saadh393/sshm/internal/config"
@@ -53,6 +54,19 @@ func runShow(cmd *cobra.Command, args []string) error {
 
 	if conn.Group != "" {
 		fmt.Printf("%s %s\n", label("Group:"), value(conn.Group))
+	}
+
+	if len(conn.Commands) > 0 {
+		names := make([]string, 0, len(conn.Commands))
+		for name := range conn.Commands {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		fmt.Printf("%s\n", label("Commands:"))
+		for _, name := range names {
+			fmt.Printf("  %-12s %s\n", name+":", value(conn.Commands[name]))
+		}
 	}
 
 	fmt.Printf("\n%s %s\n\n", bold.Sprint("SSH Command:"), sshpkg.CommandString(conn))
