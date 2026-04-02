@@ -48,9 +48,6 @@ func addCommandToConnection(alias, name, remoteCommand string) (config.Connectio
 	if conn.Commands == nil {
 		conn.Commands = make(map[string]string)
 	}
-	if _, exists := conn.Commands[name]; exists {
-		return config.Connection{}, fmt.Errorf("command %q already exists for connection %q", name, conn.Alias)
-	}
 	name = strings.TrimSpace(name)
 	remoteCommand = strings.TrimSpace(remoteCommand)
 	if name == "" {
@@ -58,6 +55,9 @@ func addCommandToConnection(alias, name, remoteCommand string) (config.Connectio
 	}
 	if remoteCommand == "" {
 		return config.Connection{}, fmt.Errorf("remote command cannot be empty")
+	}
+	if _, exists := conn.Commands[name]; exists {
+		return config.Connection{}, fmt.Errorf("command %q already exists for connection %q", name, conn.Alias)
 	}
 
 	conn.Commands[name] = remoteCommand
