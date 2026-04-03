@@ -50,11 +50,14 @@ type commandBrowserModel struct {
 	list      list.Model
 	selected  *commandItem
 	adding    bool
+	updating  bool
+	deleting  bool
 	quitting  bool
 	noCommand bool
+	status    string
 }
 
-func newCommandBrowserModel(conn config.Connection) commandBrowserModel {
+func newCommandBrowserModel(conn config.Connection, status string) commandBrowserModel {
 	names := make([]string, 0, len(conn.Commands))
 	for name := range conn.Commands {
 		names = append(names, name)
@@ -67,7 +70,7 @@ func newCommandBrowserModel(conn config.Connection) commandBrowserModel {
 	}
 
 	l := list.New(items, commandDelegate{}, 80, 24)
-	l.Title = fmt.Sprintf("Commands — %s  [enter] run  [a] add  [/] filter  [q] back", conn.Alias)
+	l.Title = fmt.Sprintf("Commands — %s  [enter] run  [a] add  [u] update  [d] delete  [/] filter  [q] back", conn.Alias)
 	l.Styles.Title = TitleStyle
 	l.SetShowHelp(true)
 	l.SetFilteringEnabled(true)
@@ -76,6 +79,7 @@ func newCommandBrowserModel(conn config.Connection) commandBrowserModel {
 		conn:      conn,
 		list:      l,
 		noCommand: len(items) == 0,
+		status:    status,
 	}
 }
 
@@ -100,6 +104,22 @@ func (m commandBrowserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "a":
 			m.adding = true
 			return m, tea.Quit
+		case "u":
+			if item, ok := m.list.SelectedItem().(commandItem); ok {
+				chosen := item
+				m.selected = &chosen
+				m.updating = true
+				return m, tea.Quit
+			}
+			m.status = "No command selected. Use ↑/↓ to choose one, then press 'u' to update."
+		case "d":
+			if item, ok := m.list.SelectedItem().(commandItem); ok {
+				chosen := item
+				m.selected = &chosen
+				m.deleting = true
+				return m, tea.Quit
+			}
+			m.status = "No command selected. Use ↑/↓ to choose one, then press 'd' to delete."
 		case "q", "esc":
 			m.quitting = true
 			return m, tea.Quit
@@ -112,8 +132,15 @@ func (m commandBrowserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m commandBrowserModel) View() string {
-	if m.quitting || m.adding || m.selected != nil {
+	if m.quitting || m.adding || m.updating || m.deleting || m.selected != nil {
 		return ""
+	}
+	statusView := ""
+	if strings.TrimSpace(m.status) != "" {
+		statusView = "\n\n" + lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#F59E0B")).
+			Bold(true).
+			Render(m.status)
 	}
 	if m.noCommand {
 		view := m.list.View()
@@ -121,20 +148,22 @@ func (m commandBrowserModel) View() string {
 			Foreground(lipgloss.Color("#9CA3AF")).
 			Italic(true).
 			Render("No saved commands yet. Press 'a' to add one.")
-		return AppStyle.Render(strings.TrimSpace(view) + "\n\n" + emptyHint)
+		return AppStyle.Render(strings.TrimSpace(view) + "\n\n" + emptyHint + statusView)
 	}
-	return AppStyle.Render(m.list.View())
+	return AppStyle.Render(m.list.View() + statusView)
 }
 
 type CommandBrowserResult struct {
 	Name    string
 	Command string
 	AddNew  bool
+	Update  bool
+	Delete  bool
 	Quit    bool
 }
 
-func RunCommandBrowser(conn config.Connection) CommandBrowserResult {
-	m := newCommandBrowserModel(conn)
+func RunCommandBrowser(conn config.Connection, status string) CommandBrowserResult {
+	m := newCommandBrowserModel(conn, status)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
@@ -146,6 +175,12 @@ func RunCommandBrowser(conn config.Connection) CommandBrowserResult {
 	}
 	if fm.adding {
 		return CommandBrowserResult{AddNew: true}
+	}
+	if fm.updating && fm.selected != nil {
+		return CommandBrowserResult{Name: fm.selected.name, Command: fm.selected.command, Update: true}
+	}
+	if fm.deleting && fm.selected != nil {
+		return CommandBrowserResult{Name: fm.selected.name, Command: fm.selected.command, Delete: true}
 	}
 	if fm.selected != nil {
 		return CommandBrowserResult{Name: fm.selected.name, Command: fm.selected.command}

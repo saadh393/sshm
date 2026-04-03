@@ -122,6 +122,8 @@ From command browser:
 | `↑` `↓` | Navigate commands |
 | `Enter` | Run selected command on selected connection |
 | `a` | Add a new command from TUI form |
+| `u` | Update selected command from TUI form |
+| `d` | Delete selected command (with confirmation) |
 | `q` `Esc` | Back |
 
 <img width="1276" height="721" alt="sshm command browser" src="https://github.com/user-attachments/assets/23c5e8d3-e15a-4284-b61e-64cb0af7511f" />

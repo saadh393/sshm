@@ -1,11 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/saadh393/sshm/internal/config"
-	"github.com/saadh393/sshm/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -22,23 +17,5 @@ func init() {
 }
 
 func runList(_ *cobra.Command, _ []string) error {
-	conns, err := config.Load()
-	if err != nil {
-		return err
-	}
-
-	if len(conns) == 0 {
-		fmt.Fprintln(os.Stdout, "No connections saved. Run 'sshm add' to add one.")
-		return nil
-	}
-
-	result := tui.Run(conns)
-	if result.Quit || result.Conn == nil {
-		return nil
-	}
-	if result.OpenCommands {
-		return runCommandBrowserFlow(*result.Conn)
-	}
-
-	return doConnect(*result.Conn, false)
+	return runConnectionListFlow()
 }

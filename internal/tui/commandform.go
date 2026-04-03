@@ -26,20 +26,36 @@ type commandFormModel struct {
 }
 
 func newCommandFormModel(conn config.Connection) commandFormModel {
+	return newCommandFormModelWithDefaults(conn, "", "")
+}
+
+func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaultCommand string) commandFormModel {
 	name := textinput.New()
 	name.Placeholder = "restart-nginx"
 	name.CharLimit = 100
-	name.Focus()
+	name.SetValue(defaultName)
 
 	command := textinput.New()
 	command.Placeholder = "sudo systemctl restart nginx"
 	command.CharLimit = 500
+	command.SetValue(defaultCommand)
+
+	if strings.TrimSpace(defaultName) == "" {
+		name.Focus()
+	} else {
+		command.Focus()
+	}
 
 	return commandFormModel{
 		conn:    conn,
 		name:    name,
 		command: command,
-		focused: 0,
+		focused: func() int {
+			if strings.TrimSpace(defaultName) == "" {
+				return 0
+			}
+			return 1
+		}(),
 	}
 }
 
@@ -109,7 +125,7 @@ func (m commandFormModel) View() string {
 		Background(lipgloss.Color("#7C3AED")).
 		Padding(0, 1).
 		MarginBottom(1).
-		Render(fmt.Sprintf("Add Command — %s", m.conn.Alias))
+		Render(fmt.Sprintf("Command — %s", m.conn.Alias))
 
 	help := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6B7280")).
@@ -144,6 +160,20 @@ func (m commandFormModel) result() CommandFormResult {
 
 func RunCommandForm(conn config.Connection) CommandFormResult {
 	m := newCommandFormModel(conn)
+	p := tea.NewProgram(m, tea.WithAltScreen())
+	finalModel, err := p.Run()
+	if err != nil {
+		return CommandFormResult{Saved: false}
+	}
+	fm, ok := finalModel.(commandFormModel)
+	if !ok {
+		return CommandFormResult{Saved: false}
+	}
+	return fm.result()
+}
+
+func RunUpdateCommandForm(conn config.Connection, name, command string) CommandFormResult {
+	m := newCommandFormModelWithDefaults(conn, name, command)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
