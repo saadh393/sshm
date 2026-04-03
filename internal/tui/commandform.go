@@ -18,6 +18,7 @@ type CommandFormResult struct {
 
 type commandFormModel struct {
 	conn    config.Connection
+	title   string
 	name    textinput.Model
 	command textinput.Model
 	focused int
@@ -26,10 +27,10 @@ type commandFormModel struct {
 }
 
 func newCommandFormModel(conn config.Connection) commandFormModel {
-	return newCommandFormModelWithDefaults(conn, "", "")
+	return newCommandFormModelWithDefaults(conn, "Add Command", "", "")
 }
 
-func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaultCommand string) commandFormModel {
+func newCommandFormModelWithDefaults(conn config.Connection, title, defaultName, defaultCommand string) commandFormModel {
 	defaultName = strings.TrimSpace(defaultName)
 	defaultCommand = strings.TrimSpace(defaultCommand)
 	hasDefaultName := defaultName != ""
@@ -52,6 +53,7 @@ func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaul
 
 	return commandFormModel{
 		conn:    conn,
+		title:   title,
 		name:    name,
 		command: command,
 		focused: func() int {
@@ -129,7 +131,7 @@ func (m commandFormModel) View() string {
 		Background(lipgloss.Color("#7C3AED")).
 		Padding(0, 1).
 		MarginBottom(1).
-		Render(fmt.Sprintf("Command — %s", m.conn.Alias))
+		Render(fmt.Sprintf("%s — %s", m.title, m.conn.Alias))
 
 	help := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#6B7280")).
@@ -177,7 +179,7 @@ func RunCommandForm(conn config.Connection) CommandFormResult {
 }
 
 func RunUpdateCommandForm(conn config.Connection, name, command string) CommandFormResult {
-	m := newCommandFormModelWithDefaults(conn, name, command)
+	m := newCommandFormModelWithDefaults(conn, "Update Command", name, command)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {

@@ -34,13 +34,12 @@ func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 			}
 			updatedConn, err := addCommandToConnection(conn.Alias, formResult.Name, formResult.Command)
 			if err != nil {
-				status = fmt.Sprintf("Failed to add command %q: %s", strings.TrimSpace(formResult.Name), err.Error())
+				status = fmt.Sprintf("Failed to add command %q: %s", formResult.Name, err.Error())
 				continue
 			}
 			conn = updatedConn
 			green := color.New(color.FgGreen, color.Bold)
 			fmt.Fprintf(os.Stdout, "%s Added command %q to %q\n", green.Sprint("✓"), formResult.Name, conn.Alias)
-			status = fmt.Sprintf("Added command %q.", formResult.Name)
 			continue
 		}
 
@@ -57,7 +56,6 @@ func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 			conn = updatedConn
 			green := color.New(color.FgGreen, color.Bold)
 			fmt.Fprintf(os.Stdout, "%s Updated command %q on %q\n", green.Sprint("✓"), formResult.Name, conn.Alias)
-			status = fmt.Sprintf("Updated command %q.", formResult.Name)
 			continue
 		}
 
@@ -78,7 +76,6 @@ func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 			conn = updatedConn
 			red := color.New(color.FgRed, color.Bold)
 			fmt.Fprintf(os.Stdout, "%s Deleted command %q from %q\n", red.Sprint("✗"), browserResult.Name, conn.Alias)
-			status = fmt.Sprintf("Deleted command %q.", browserResult.Name)
 			continue
 		}
 
