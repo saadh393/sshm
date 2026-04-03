@@ -142,6 +142,9 @@ func addCommandToConnection(alias, name, remoteCommand string) (config.Connectio
 	return conn, nil
 }
 
+// updateCommandOnConnection updates an existing saved command for a connection.
+// It supports renaming the command by replacing oldName with newName when needed.
+// Returns the updated connection after persisting to disk.
 func updateCommandOnConnection(alias, oldName, newName, remoteCommand string) (config.Connection, error) {
 	conns, idx, conn, err := loadConnectionAndIndex(alias)
 	if err != nil {
@@ -179,6 +182,9 @@ func updateCommandOnConnection(alias, oldName, newName, remoteCommand string) (c
 	return conn, nil
 }
 
+// deleteCommandFromConnection removes a saved command from a connection.
+// If the deleted command was the last one, it resets Commands to nil before save.
+// Returns the updated connection after persisting to disk.
 func deleteCommandFromConnection(alias, name string) (config.Connection, error) {
 	conns, idx, conn, err := loadConnectionAndIndex(alias)
 	if err != nil {

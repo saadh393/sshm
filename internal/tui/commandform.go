@@ -45,14 +45,12 @@ func newCommandFormModelWithDefaults(conn config.Connection, title, defaultName,
 	command.CharLimit = 500
 	command.SetValue(defaultCommand)
 
-	if !hasDefaultName {
-		name.Focus()
-	} else {
-		command.Focus()
-	}
 	focused := 0
 	if hasDefaultName {
 		focused = 1
+		command.Focus()
+	} else {
+		name.Focus()
 	}
 
 	return commandFormModel{
