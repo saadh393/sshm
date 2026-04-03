@@ -50,18 +50,17 @@ func newCommandFormModelWithDefaults(conn config.Connection, title, defaultName,
 	} else {
 		command.Focus()
 	}
+	focused := 0
+	if hasDefaultName {
+		focused = 1
+	}
 
 	return commandFormModel{
 		conn:    conn,
 		title:   title,
 		name:    name,
 		command: command,
-		focused: func() int {
-			if !hasDefaultName {
-				return 0
-			}
-			return 1
-		}(),
+		focused: focused,
 	}
 }
 
