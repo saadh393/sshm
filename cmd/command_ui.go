@@ -34,7 +34,7 @@ func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 			}
 			updatedConn, err := addCommandToConnection(conn.Alias, formResult.Name, formResult.Command)
 			if err != nil {
-				status = fmt.Sprintf("Failed to add command %q. Use a unique name and non-empty command.", strings.TrimSpace(formResult.Name))
+				status = fmt.Sprintf("Failed to add command %q: %s", strings.TrimSpace(formResult.Name), err.Error())
 				continue
 			}
 			conn = updatedConn
@@ -51,7 +51,7 @@ func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 			}
 			updatedConn, err := updateCommandOnConnection(conn.Alias, browserResult.Name, formResult.Name, formResult.Command)
 			if err != nil {
-				status = fmt.Sprintf("Failed to update command %q. Ensure it exists, the new name is unique, and command text is not empty.", browserResult.Name)
+				status = fmt.Sprintf("Failed to update command %q: %s", browserResult.Name, err.Error())
 				continue
 			}
 			conn = updatedConn
@@ -72,7 +72,7 @@ func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 			}
 			updatedConn, err := deleteCommandFromConnection(conn.Alias, browserResult.Name)
 			if err != nil {
-				status = fmt.Sprintf("Failed to delete command %q. Reload and try again.", browserResult.Name)
+				status = fmt.Sprintf("Failed to delete command %q: %s", browserResult.Name, err.Error())
 				continue
 			}
 			conn = updatedConn

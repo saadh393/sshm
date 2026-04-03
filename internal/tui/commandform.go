@@ -32,6 +32,7 @@ func newCommandFormModel(conn config.Connection) commandFormModel {
 func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaultCommand string) commandFormModel {
 	defaultName = strings.TrimSpace(defaultName)
 	defaultCommand = strings.TrimSpace(defaultCommand)
+	hasDefaultName := defaultName != ""
 
 	name := textinput.New()
 	name.Placeholder = "restart-nginx"
@@ -43,7 +44,7 @@ func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaul
 	command.CharLimit = 500
 	command.SetValue(defaultCommand)
 
-	if strings.TrimSpace(defaultName) == "" {
+	if !hasDefaultName {
 		name.Focus()
 	} else {
 		command.Focus()
@@ -54,7 +55,7 @@ func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaul
 		name:    name,
 		command: command,
 		focused: func() int {
-			if strings.TrimSpace(defaultName) == "" {
+			if !hasDefaultName {
 				return 0
 			}
 			return 1
