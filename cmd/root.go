@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/saadh393/sshm/internal/config"
-	"github.com/saadh393/sshm/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -21,19 +19,7 @@ var rootCmd = &cobra.Command{
 
 Run 'sshm -h' to see available commands.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conns, err := config.Load()
-		if err != nil {
-			return err
-		}
-		if len(conns) == 0 {
-			fmt.Fprintln(os.Stdout, "No connections saved. Run 'sshm add' to add one.")
-			return nil
-		}
-		result := tui.Run(conns)
-		if result.Quit || result.Conn == nil {
-			return nil
-		}
-		return doConnect(*result.Conn, false)
+		return runConnectionListFlow()
 	},
 }
 

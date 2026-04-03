@@ -90,14 +90,16 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 
 // Model is the top-level Bubble Tea model for the connection list.
 type Model struct {
-	list      list.Model
-	chosen    *config.Connection
-	quitting  bool
-	allConns  []config.Connection
+	list                  list.Model
+	chosen                *config.Connection
+	quitting              bool
+	openCommands          bool
+	enableCommandShortcut bool
+	allConns              []config.Connection
 }
 
 // NewModel constructs a Model from a slice of connections.
-func NewModel(conns []config.Connection, width, height int, title string) Model {
+func NewModel(conns []config.Connection, width, height int, title string, enableCommandShortcut bool) Model {
 	items := make([]list.Item, len(conns))
 	for i, c := range conns {
 		items[i] = connItem{conn: c}
@@ -112,8 +114,9 @@ func NewModel(conns []config.Connection, width, height int, title string) Model 
 	l.SetFilteringEnabled(true)
 
 	return Model{
-		list:     l,
-		allConns: conns,
+		list:                  l,
+		enableCommandShortcut: enableCommandShortcut,
+		allConns:              conns,
 	}
 }
 
@@ -138,6 +141,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.chosen = &item.conn
 				return m, tea.Quit
 			}
+		case "c":
+			if m.enableCommandShortcut {
+				if item, ok := m.list.SelectedItem().(connItem); ok {
+					m.chosen = &item.conn
+					m.openCommands = true
+					return m, tea.Quit
+				}
+			}
 		case "q", "esc":
 			m.quitting = true
 			return m, tea.Quit
@@ -158,8 +169,9 @@ func (m Model) View() string {
 
 // Result holds the outcome after the TUI exits.
 type Result struct {
-	Conn   *config.Connection
-	Quit   bool
+	Conn         *config.Connection
+	OpenCommands bool
+	Quit         bool
 }
 
 // Run launches the TUI and blocks until the user selects a connection or quits.
@@ -168,7 +180,7 @@ func Run(conns []config.Connection) Result {
 		return Result{Quit: true}
 	}
 
-	m := NewModel(conns, 80, 24, "SSH Connections  [enter] connect  [/] filter  [q] quit")
+	m := NewModel(conns, 80, 24, "SSH Connections  [enter] connect  [c] commands  [/] filter  [q] quit", true)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
@@ -180,7 +192,7 @@ func Run(conns []config.Connection) Result {
 		return Result{Quit: true}
 	}
 	if fm.chosen != nil {
-		return Result{Conn: fm.chosen}
+		return Result{Conn: fm.chosen, OpenCommands: fm.openCommands}
 	}
 	return Result{Quit: true}
 }

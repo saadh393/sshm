@@ -17,12 +17,13 @@ const (
 
 // Connection represents a single SSH connection entry.
 type Connection struct {
-	Alias   string `json:"alias"`
-	Host    string `json:"host"`
-	User    string `json:"user"`
-	Port    int    `json:"port"`
-	KeyPath string `json:"key_path,omitempty"`
-	Group   string `json:"group,omitempty"`
+	Alias    string            `json:"alias"`
+	Host     string            `json:"host"`
+	User     string            `json:"user"`
+	Port     int               `json:"port"`
+	KeyPath  string            `json:"key_path,omitempty"`
+	Group    string            `json:"group,omitempty"`
+	Commands map[string]string `json:"commands,omitempty"`
 }
 
 // configPath returns the full path to connections.json.
@@ -88,6 +89,17 @@ func FindExact(conns []Connection, alias string) (Connection, bool) {
 		}
 	}
 	return Connection{}, false
+}
+
+// FindExactWithIndex returns the matching connection and its index.
+func FindExactWithIndex(conns []Connection, alias string) (Connection, int, bool) {
+	lower := strings.ToLower(alias)
+	for i, c := range conns {
+		if strings.ToLower(c.Alias) == lower {
+			return c, i, true
+		}
+	}
+	return Connection{}, -1, false
 }
 
 // FindSubstring returns all connections whose alias, host, user or group

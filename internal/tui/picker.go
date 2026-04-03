@@ -1,8 +1,8 @@
 package tui
 
 import (
-	"github.com/saadh393/sshm/internal/config"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/saadh393/sshm/internal/config"
 )
 
 // RunPicker opens the interactive list TUI with a custom title and returns
@@ -13,7 +13,7 @@ func RunPicker(conns []config.Connection, title string) Result {
 		return Result{Quit: true}
 	}
 
-	m := NewModel(conns, 80, 24, title)
+	m := NewModel(conns, 80, 24, title, false)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	finalModel, err := p.Run()
 	if err != nil {
