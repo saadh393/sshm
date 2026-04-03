@@ -111,7 +111,7 @@ func (m commandBrowserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.updating = true
 				return m, tea.Quit
 			}
-			m.status = "No command available to update."
+			m.status = "Please select a command to update."
 		case "d":
 			if item, ok := m.list.SelectedItem().(commandItem); ok {
 				chosen := item
@@ -119,7 +119,7 @@ func (m commandBrowserModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.deleting = true
 				return m, tea.Quit
 			}
-			m.status = "No command available to delete."
+			m.status = "Please select a command to delete."
 		case "q", "esc":
 			m.quitting = true
 			return m, tea.Quit
