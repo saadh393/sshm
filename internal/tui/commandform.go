@@ -30,6 +30,9 @@ func newCommandFormModel(conn config.Connection) commandFormModel {
 }
 
 func newCommandFormModelWithDefaults(conn config.Connection, defaultName, defaultCommand string) commandFormModel {
+	defaultName = strings.TrimSpace(defaultName)
+	defaultCommand = strings.TrimSpace(defaultCommand)
+
 	name := textinput.New()
 	name.Placeholder = "restart-nginx"
 	name.CharLimit = 100

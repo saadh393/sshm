@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,15 +11,20 @@ import (
 	"github.com/saadh393/sshm/internal/tui"
 )
 
-var errBackToConnectionList = errors.New("back to connection list")
+type commandBrowserExit int
 
-func runCommandBrowserFlow(conn config.Connection) error {
+const (
+	commandBrowserExitBack commandBrowserExit = iota
+	commandBrowserExitConnect
+)
+
+func runCommandBrowserFlow(conn config.Connection) (commandBrowserExit, error) {
 	status := ""
 	for {
 		browserResult := tui.RunCommandBrowser(conn, status)
 		status = ""
 		if browserResult.Quit {
-			return errBackToConnectionList
+			return commandBrowserExitBack, nil
 		}
 
 		if browserResult.AddNew {
@@ -30,7 +34,7 @@ func runCommandBrowserFlow(conn config.Connection) error {
 			}
 			updatedConn, err := addCommandToConnection(conn.Alias, formResult.Name, formResult.Command)
 			if err != nil {
-				status = fmt.Sprintf("Failed to add command: %v. Try a unique name and non-empty command.", err)
+				status = fmt.Sprintf("Failed to add command %q. Use a unique name and non-empty command.", strings.TrimSpace(formResult.Name))
 				continue
 			}
 			conn = updatedConn
@@ -47,7 +51,7 @@ func runCommandBrowserFlow(conn config.Connection) error {
 			}
 			updatedConn, err := updateCommandOnConnection(conn.Alias, browserResult.Name, formResult.Name, formResult.Command)
 			if err != nil {
-				status = fmt.Sprintf("Failed to update command: %v. Ensure the command exists and name is unique.", err)
+				status = fmt.Sprintf("Failed to update command %q. Ensure it exists, the new name is unique, and command text is not empty.", browserResult.Name)
 				continue
 			}
 			conn = updatedConn
@@ -68,7 +72,7 @@ func runCommandBrowserFlow(conn config.Connection) error {
 			}
 			updatedConn, err := deleteCommandFromConnection(conn.Alias, browserResult.Name)
 			if err != nil {
-				status = fmt.Sprintf("Failed to delete command: %v. Try reloading and selecting the command again.", err)
+				status = fmt.Sprintf("Failed to delete command %q. Reload and try again.", browserResult.Name)
 				continue
 			}
 			conn = updatedConn
@@ -81,7 +85,7 @@ func runCommandBrowserFlow(conn config.Connection) error {
 		blue := color.New(color.FgCyan)
 		cmdStr := sshpkg.RemoteCommandString(conn, browserResult.Command)
 		fmt.Fprintf(os.Stderr, "%s Running: %s\n", blue.Sprint("→"), cmdStr)
-		return sshpkg.ConnectRemoteCommand(conn, browserResult.Command)
+		return commandBrowserExitConnect, sshpkg.ConnectRemoteCommand(conn, browserResult.Command)
 	}
 }
 
@@ -100,11 +104,14 @@ func runConnectionListFlow() error {
 			return nil
 		}
 		if result.OpenCommands {
-			err = runCommandBrowserFlow(*result.Conn)
-			if errors.Is(err, errBackToConnectionList) {
+			exit, err := runCommandBrowserFlow(*result.Conn)
+			if err != nil {
+				return err
+			}
+			if exit == commandBrowserExitBack {
 				continue
 			}
-			return err
+			return nil
 		}
 		return doConnect(*result.Conn, false)
 	}
