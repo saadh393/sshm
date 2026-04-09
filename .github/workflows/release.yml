@@ -108,10 +108,11 @@ jobs:
             --pretty=format:"- %s" 2>/dev/null | head -20 || echo "- Automated release from main")
 
           PRERELEASE_FLAG=""
-          LATEST_FLAG="--latest"
-          if [ "$IS_TAG" != "true" ]; then
+          LATEST_FLAG=""
+          if [ "$IS_TAG" = "true" ]; then
+            LATEST_FLAG="--latest"
+          else
             PRERELEASE_FLAG="--prerelease"
-            # auto releases are still marked latest so install.sh can find them
           fi
 
           gh release create "${VERSION}" \
