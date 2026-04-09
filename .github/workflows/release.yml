@@ -66,9 +66,23 @@ jobs:
           tar -C dist/pkg/darwin_arm64  -czf "dist/${BINARY}_${ARCHIVE_VERSION}_darwin_arm64.tar.gz"  $BINARY
           tar -C dist/pkg/linux_amd64   -czf "dist/${BINARY}_${ARCHIVE_VERSION}_linux_amd64.tar.gz"   $BINARY
           tar -C dist/pkg/linux_arm64   -czf "dist/${BINARY}_${ARCHIVE_VERSION}_linux_arm64.tar.gz"   $BINARY
-          cd dist/pkg/windows_amd64 && zip -q "../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip" $BINARY.exe
+          (
+            cd dist/pkg/windows_amd64
+            zip -q "../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip" $BINARY.exe
+          )
 
           echo "Archives:"
+          TAR_ARCHIVES_FOUND=true
+          ZIP_ARCHIVES_FOUND=true
+          compgen -G "dist/*.tar.gz" > /dev/null || TAR_ARCHIVES_FOUND=false
+          compgen -G "dist/*.zip" > /dev/null || ZIP_ARCHIVES_FOUND=false
+          if [ "$TAR_ARCHIVES_FOUND" = false ] || [ "$ZIP_ARCHIVES_FOUND" = false ]; then
+            MISSING_ARCHIVES=()
+            [ "$TAR_ARCHIVES_FOUND" = false ] && MISSING_ARCHIVES+=("tar.gz")
+            [ "$ZIP_ARCHIVES_FOUND" = false ] && MISSING_ARCHIVES+=("zip")
+            echo "Missing expected release archives: ${MISSING_ARCHIVES[*]}"
+            exit 1
+          fi
           ls -lh dist/*.tar.gz dist/*.zip
 
       # For auto-generated versions (main push): delete any existing "latest" release
