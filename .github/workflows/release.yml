@@ -72,12 +72,13 @@ jobs:
           )
 
           echo "Archives:"
-          ARCHIVES=(dist/*.tar.gz dist/*.zip)
-          if [ "${#ARCHIVES[@]}" -eq 0 ] || [ "${ARCHIVES[0]}" = "dist/*.tar.gz" ]; then
-            echo "No release archives were produced."
+          TAR_ARCHIVES=(dist/*.tar.gz)
+          ZIP_ARCHIVES=(dist/*.zip)
+          if [ "${TAR_ARCHIVES[0]}" = "dist/*.tar.gz" ] || [ "${ZIP_ARCHIVES[0]}" = "dist/*.zip" ]; then
+            echo "Missing expected release archives."
             exit 1
           fi
-          ls -lh "${ARCHIVES[@]}"
+          ls -lh "${TAR_ARCHIVES[@]}" "${ZIP_ARCHIVES[@]}"
 
       # For auto-generated versions (main push): delete any existing "latest" release
       # so the new one becomes /releases/latest. For real tags: create a normal release.
