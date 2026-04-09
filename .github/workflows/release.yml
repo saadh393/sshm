@@ -66,10 +66,18 @@ jobs:
           tar -C dist/pkg/darwin_arm64  -czf "dist/${BINARY}_${ARCHIVE_VERSION}_darwin_arm64.tar.gz"  $BINARY
           tar -C dist/pkg/linux_amd64   -czf "dist/${BINARY}_${ARCHIVE_VERSION}_linux_amd64.tar.gz"   $BINARY
           tar -C dist/pkg/linux_arm64   -czf "dist/${BINARY}_${ARCHIVE_VERSION}_linux_arm64.tar.gz"   $BINARY
-          cd dist/pkg/windows_amd64 && zip -q "../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip" $BINARY.exe
+          (
+            cd dist/pkg/windows_amd64
+            zip -q "../../${BINARY}_${ARCHIVE_VERSION}_windows_amd64.zip" $BINARY.exe
+          )
 
           echo "Archives:"
-          ls -lh dist/*.tar.gz dist/*.zip
+          ARCHIVES=(dist/*.tar.gz dist/*.zip)
+          if [ "${#ARCHIVES[@]}" -eq 0 ] || [ "${ARCHIVES[0]}" = "dist/*.tar.gz" ]; then
+            echo "No release archives were produced."
+            exit 1
+          fi
+          ls -lh "${ARCHIVES[@]}"
 
       # For auto-generated versions (main push): delete any existing "latest" release
       # so the new one becomes /releases/latest. For real tags: create a normal release.
