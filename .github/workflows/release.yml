@@ -74,12 +74,12 @@ jobs:
           echo "Archives:"
           TAR_ARCHIVES=(dist/*.tar.gz)
           ZIP_ARCHIVES=(dist/*.zip)
-          MISSING_TAR=false
-          MISSING_ZIP=false
-          [ "${TAR_ARCHIVES[0]}" = "dist/*.tar.gz" ] && MISSING_TAR=true
-          [ "${ZIP_ARCHIVES[0]}" = "dist/*.zip" ] && MISSING_ZIP=true
-          if [ "$MISSING_TAR" = true ] || [ "$MISSING_ZIP" = true ]; then
-            echo "Missing expected release archives (tar.gz: $MISSING_TAR, zip: $MISSING_ZIP)."
+          NO_TAR_MATCH=false
+          NO_ZIP_MATCH=false
+          [ "${TAR_ARCHIVES[0]}" = "dist/*.tar.gz" ] && NO_TAR_MATCH=true
+          [ "${ZIP_ARCHIVES[0]}" = "dist/*.zip" ] && NO_ZIP_MATCH=true
+          if [ "$NO_TAR_MATCH" = true ] || [ "$NO_ZIP_MATCH" = true ]; then
+            echo "Missing expected release archives (tar.gz: $NO_TAR_MATCH, zip: $NO_ZIP_MATCH)."
             exit 1
           fi
           ls -lh "${TAR_ARCHIVES[@]}" "${ZIP_ARCHIVES[@]}"
