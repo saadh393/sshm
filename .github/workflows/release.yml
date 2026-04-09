@@ -72,12 +72,15 @@ jobs:
           )
 
           echo "Archives:"
-          NO_TAR_MATCH=false
-          NO_ZIP_MATCH=false
-          compgen -G "dist/*.tar.gz" > /dev/null || NO_TAR_MATCH=true
-          compgen -G "dist/*.zip" > /dev/null || NO_ZIP_MATCH=true
-          if [ "$NO_TAR_MATCH" = true ] || [ "$NO_ZIP_MATCH" = true ]; then
-            echo "Missing expected release archives (tar.gz: $NO_TAR_MATCH, zip: $NO_ZIP_MATCH)."
+          TAR_ARCHIVES_FOUND=true
+          ZIP_ARCHIVES_FOUND=true
+          compgen -G "dist/*.tar.gz" > /dev/null || TAR_ARCHIVES_FOUND=false
+          compgen -G "dist/*.zip" > /dev/null || ZIP_ARCHIVES_FOUND=false
+          if [ "$TAR_ARCHIVES_FOUND" = false ] || [ "$ZIP_ARCHIVES_FOUND" = false ]; then
+            MISSING_ARCHIVES=()
+            [ "$TAR_ARCHIVES_FOUND" = false ] && MISSING_ARCHIVES+=("tar.gz")
+            [ "$ZIP_ARCHIVES_FOUND" = false ] && MISSING_ARCHIVES+=("zip")
+            echo "Missing expected release archives: ${MISSING_ARCHIVES[*]}"
             exit 1
           fi
           ls -lh dist/*.tar.gz dist/*.zip
